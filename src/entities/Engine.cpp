@@ -59,8 +59,14 @@ void Engine::update(float dt, float throttleInput, float loadTorque, bool starte
         0.0f, 1.0f
     );
 
+    // Regulation du ralenti : filet de gaz (PI) pour tenir idleRPM, le conducteur peut ouvrir davantage
+    const float idleError = (config_.idleRPM - rpm_) / config_.idleRPM;
+    idleIntegral_ = std::clamp(idleIntegral_ + config_.idleKi * idleError * dt, 0.0f, config_.idleMaxThrottle);
+    const float idleThrottle = std::clamp(idleIntegral_ + config_.idleKp * idleError, 0.0f, config_.idleMaxThrottle);
+    const float throttle = std::max(throttleInput_, idleThrottle);
+
     // Calculer le couple moteur en fonction du régime et de l'entrée d'accélérateur
-    torque_ = getTorqueAtRPM(rpm_, throttleInput_) * limiterFactor;
+    torque_ = getTorqueAtRPM(rpm_, throttle) * limiterFactor;
 
     // Calculer l'accélération angulaire en fonction du couple moteur, du couple de charge et du couple de friction
     const float friction = config_.frictionTorque + config_.frictionPerRPM * rpm_;
@@ -87,6 +93,7 @@ void Engine::reset() {
     throttleInput_ = 0.0f;
     stallTimer_ = 0.0f;
     crankTimer_ = 0.0f;
+    idleIntegral_ = 0.0f;
     running_ = false;
 }
 
@@ -96,5 +103,6 @@ void Engine::start() {
         rpm_ = config_.idleRPM; // Démarrer le moteur au régime de ralenti
         stallTimer_ = 0.0f; // Réinitialiser le timer de calage
         crankTimer_ = 0.0f;
+        idleIntegral_ = 0.1f; // Ouverture approximative du ralenti, affinee par le regulateur
     }
 }

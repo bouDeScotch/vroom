@@ -23,7 +23,12 @@ public:
         float starterMaxRPM = 400.0f; // Regime auquel le couple du demarreur s'annule
         float compressionTorque = 40.0f; // Nm de resistance moteur coupe (compression, frottements)
         float startRPM = 180.0f; // Regime a tenir pour que le moteur prenne
-        float crankTime = 0.3f; // Duree a tenir au-dessus de startRPM (s)
+        float crankTime = 0.2f; // Duree a tenir au-dessus de startRPM (s)
+
+        // Regulateur de ralenti (PI sur l'ecart relatif de regime)
+        float idleKp = 0.5f;
+        float idleKi = 0.4f;
+        float idleMaxThrottle = 0.3f; // Ouverture max du filet de gaz
 
         // Fraction de maxTorque en fonction du regime, interpolee lineairement
         // Plateau turbo de 2000 a 5200 tr/min, puissance max 202 kW a 5600 tr/min
@@ -54,6 +59,7 @@ private:
     float throttleInput_ = 0.0f;
     float stallTimer_ = 0.0f;
     float crankTimer_ = 0.0f;
+    float idleIntegral_ = 0.0f;
 
     bool running_ = false;
 
