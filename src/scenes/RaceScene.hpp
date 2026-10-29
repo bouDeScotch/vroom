@@ -5,6 +5,8 @@
 #include "../entities/Car.hpp"
 #include "../entities/Engine.hpp"
 #include "../world/Track.hpp"
+#include "../audio/Enginesound.hpp"
+#include "../core/FollowCamera.hpp"
 
 class RaceScene : public Scene {
 public:
@@ -21,6 +23,7 @@ private:
     Car car_;
     InputMapper input_;
     Surface surface_ = Surface::Asphalt;  // surface sous la voiture (mise a jour dans update)
-    Camera2D camera_{};
-    float zoom_ = 0.6f;      // molette de la souris pour regler
+    FollowCamera camera_;
+    EngineSound engineSound_;
+    float zoom_ = 1.0f;      // molette de la souris pour regler
 };

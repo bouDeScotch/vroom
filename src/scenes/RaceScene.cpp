@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <utility>
+#include <rlgl.h>
 
 namespace {
 const char* surfaceName(Surface s) {
@@ -22,6 +23,8 @@ RaceScene::RaceScene(Game& game, std::string trackPath)
       trackPath_(std::move(trackPath)),
       track_(trackPath_, TrackConfig{0.5f, 0.0f}) {  // 0.5 m/pixel, depart vers la droite (0 deg)
     car_.reset(track_.startPosition(), track_.startAngleRad());
+    camera_.snapTo(car_.getPosition(), car_.getAngle());
+    car_.loadSprite(ASSETS_PATH "Cars/Car1.png");
 }
 
 void RaceScene::handleInput() {
@@ -36,6 +39,7 @@ void RaceScene::handleInput() {
 void RaceScene::update(float dt) {
     if (resetRequested_) {
         car_.reset(track_.startPosition(), track_.startAngleRad());
+        camera_.snapTo(car_.getPosition(), car_.getAngle());
         resetRequested_ = false;
     }
 
@@ -45,6 +49,7 @@ void RaceScene::update(float dt) {
 
     const CarInput& input = input_.step(dt);
     car_.update(dt, input);
+    engineSound_.update(car_.getEngineRPM(), input.throttle);
 
     for (const Vector2& corner : car_.getCorners()) {
         if (track_.isWall(corner)) { car_.collide(); break; }
@@ -52,19 +57,23 @@ void RaceScene::update(float dt) {
 }
 
 void RaceScene::draw() {
-    const float ppm = car_.getPixelsPerMeter();
+    const float ppm = car_.getPixelsPerMeter(); 
+    camera_.update(GetFrameTime(), car_.getPosition(), car_.getAngle(), car_.getLongitudinalSpeed());
+    const Camera3D cam = camera_.get(zoom_);
+
+    BeginMode3D(cam);
+        rlDisableDepthTest();          // tout est a plat : l'ordre de dessin suffit
+        rlDisableBackfaceCulling(); 
+        track_.drawGround();
+        track_.draw3D();
+        car_.draw3D();
+    EndMode3D();
     const Vector2 p = car_.getPosition();
+    const Vector2 sp = GetWorldToScreen({p.x, 0.0f, p.y}, cam);   // cam = Camera3D de la frame
 
-    // Camera qui suit la voiture (orientation fixe)
-    camera_.offset = {GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f};
-    camera_.target = {p.x * ppm, p.y * ppm};
-    camera_.rotation = 0.0f;
-    camera_.zoom = zoom_;
-
-    BeginMode2D(camera_);
-    track_.draw(ppm);
-    car_.draw();   // uniquement la carrosserie, en coordonnees monde
-    EndMode2D();
+    const char* txt = TextFormat("%.0f km/h", std::fabs(car_.getLongitudinalSpeed()) * 3.6f);
+    const int w = MeasureText(txt, 24);
+    DrawText(txt, (int)sp.x - w / 2, (int)sp.y - 60, 24, RAYWHITE);   // 60 px au-dessus de la voiture
 
     // HUD en coordonnees ecran, apres EndMode2D
     DrawText("Backspace: retour au depart | Molette: zoom", 20, 20, 20, RAYWHITE);

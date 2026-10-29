@@ -10,11 +10,22 @@ Engine::Engine(const Config& config) : config_(config) {
 }
 
 float Engine::getTorqueAtRPM(float rpm, float throttle) const {
-    float normalizedRPM = std::clamp(rpm / config_.maxRPM, 0.0f, 1.0f)/1.2f;
+    const auto& c = config_.torqueCurve;
 
-    // Simplification : torque proportionnel à la charge de l'accélérateur et décroissant avec le régime moteur
-    float torque = config_.maxTorque * (-4*normalizedRPM*(normalizedRPM - 1)); // Parabole qui vaut 0 à 0 et 1, et max à 0.5
-    return torque * throttle;
+    // Interpolation lineaire entre les points de la courbe, valeurs extremes au-dela
+    float factor = c.back().factor;
+    if (rpm <= c.front().rpm) {
+        factor = c.front().factor;
+    } else {
+        for (size_t i = 1; i < c.size(); ++i) {
+            if (rpm <= c[i].rpm) {
+                const float t = (rpm - c[i - 1].rpm) / (c[i].rpm - c[i - 1].rpm);
+                factor = c[i - 1].factor + t * (c[i].factor - c[i - 1].factor);
+                break;
+            }
+        }
+    }
+    return config_.maxTorque * factor * throttle;
 }
 
 void Engine::update(float dt, float throttleInput, float loadTorque) {
@@ -36,7 +47,7 @@ void Engine::update(float dt, float throttleInput, float loadTorque) {
     }
 
     const float omega = rpm_ * (2.0f * PI / 60.0f); // Convertir RPM en rad/s
-    const float limiterStart = config_.maxRPM - 500.0f;
+    const float limiterStart = config_.maxRPM - 150.0f;
     const float limiterFactor = std::clamp(
         (config_.maxRPM - rpm_) / (config_.maxRPM - limiterStart),
         0.0f, 1.0f

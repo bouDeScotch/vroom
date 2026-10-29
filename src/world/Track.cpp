@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <stdexcept>
+#include <rlgl.h>
 
 namespace {
 
@@ -101,7 +102,8 @@ Track::Track(const std::string& imagePath, TrackConfig config) : config_(config)
         dst[i * 4 + 3] = 255;
     }
     texture_ = LoadTextureFromImage(img);
-    SetTextureFilter(texture_, TEXTURE_FILTER_BILINEAR);
+    GenTextureMipmaps(&texture_);
+    SetTextureFilter(texture_, TEXTURE_FILTER_ANISOTROPIC_16X);
     UnloadImage(img);
 }
 
@@ -132,6 +134,16 @@ float Track::rollingCoeff(Surface s) {
     return 0.015f;
 }
 
+float Track::gripCoeff(Surface s) {
+    switch (s) {
+        case Surface::Asphalt: return 1.05f;
+        case Surface::Gravel:  return 0.55f;
+        case Surface::Grass:   return 0.45f;
+        case Surface::Wall:    return 1.0f;
+    }
+    return 1.0f;
+}
+
 float Track::startAngleRad() const {
     return config_.startAngleDeg * DEG2RAD;
 }
@@ -142,4 +154,32 @@ Vector2 Track::sizeMeters() const {
 
 void Track::draw(float pixelsPerMeter) const {
     DrawTextureEx(texture_, Vector2{0.0f, 0.0f}, 0.0f, config_.metersPerPixel * pixelsPerMeter, WHITE);
+}
+
+void Track::drawGround() const {
+    const float R = 20000.0f;                       // demi-taille en metres
+    const Vector2 s = sizeMeters();
+    const float cx = s.x * 0.5f, cz = s.y * 0.5f;
+
+    rlSetTexture(0);
+    rlBegin(RL_QUADS);
+    rlColor4ub(0, 160, 0, 255);
+    rlVertex3f(cx - R, 0.0f, cz - R);
+    rlVertex3f(cx - R, 0.0f, cz + R);
+    rlVertex3f(cx + R, 0.0f, cz + R);
+    rlVertex3f(cx + R, 0.0f, cz - R);
+    rlEnd();
+}
+
+void Track::draw3D() const {
+    const Vector2 s = sizeMeters();
+    rlSetTexture(texture_.id);
+    rlBegin(RL_QUADS);
+    rlColor4ub(255, 255, 255, 255);
+    rlTexCoord2f(0, 0); rlVertex3f(0.0f, 0.0f, 0.0f);
+    rlTexCoord2f(0, 1); rlVertex3f(0.0f, 0.0f, s.y);
+    rlTexCoord2f(1, 1); rlVertex3f(s.x,  0.0f, s.y);
+    rlTexCoord2f(1, 0); rlVertex3f(s.x,  0.0f, 0.0f);
+    rlEnd();
+    rlSetTexture(0);
 }

@@ -14,8 +14,7 @@ void Game::run() {
     float acc = 0.0f;
     while (running_ && !WindowShouldClose()) {
         if (pending_) scene_ = std::move(pending_);
-
-        if (IsKeyPressed(KEY_DOWN)) TraceLog(LOG_INFO, "DOWN detecte");
+        
         scene_->handleInput();
 
         acc += std::min(GetFrameTime(), 0.25f);   // évite la spirale de la mort
@@ -25,7 +24,7 @@ void Game::run() {
         }
 
         BeginDrawing();
-            ClearBackground(BLACK);
+            ClearBackground(SKYBLUE);
             scene_->draw();
             DrawFPS(10, 10);
         EndDrawing();

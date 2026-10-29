@@ -28,6 +28,7 @@ public:
     Track& operator=(Track&&) = delete;
 
     // Surface sous un point (en metres). Hors de l'image => Wall.
+    static float gripCoeff(Surface s);
     Surface surfaceAt(Vector2 posMeters) const;
     bool isWall(Vector2 posMeters) const { return surfaceAt(posMeters) == Surface::Wall; }
 
@@ -40,7 +41,8 @@ public:
 
     // A appeler entre BeginMode2D et EndMode2D.
     void draw(float pixelsPerMeter) const;
-
+    void draw3D() const;
+    void drawGround() const;  // sol vert autour du circuit, en 3D
 private:
     TrackConfig config_;
     int width_  = 0;

@@ -1,18 +1,29 @@
 #pragma once
 #include "raylib.h"
+#include <array>
 
 class Engine {
 public:
+    struct TorquePoint { float rpm; float factor; };
+
     struct Config {
-        float idleRPM = 800.0f;
-        float maxRPM = 6800.0f;
+        // Subaru WRX (FA24 2.4 L turbo, 4 cylindres a plat) : 350 Nm, 202 kW
+        float idleRPM = 750.0f;
+        float maxRPM = 6500.0f;
         float stallRPM = 450.0f;
 
-        float maxTorque = 1600.0f; // Nm
-        float inertia = 0.3f; // kg*m^2
-        float frictionTorque = 10.0f; // Nm
-        float frictionPerRPM = 0.01f; // Nm/rpm
+        float maxTorque = 350.0f; // Nm
+        float inertia = 0.2f; // kg*m^2
+        float frictionTorque = 8.0f; // Nm
+        float frictionPerRPM = 0.006f; // Nm/rpm
         float limiterTorque = 0.0f; // Nm
+
+        // Fraction de maxTorque en fonction du regime, interpolee lineairement
+        // Plateau turbo de 2000 a 5200 tr/min, puissance max 202 kW a 5600 tr/min
+        std::array<TorquePoint, 8> torqueCurve{{
+            {0.0f, 0.30f}, {750.0f, 0.40f}, {1500.0f, 0.65f}, {2000.0f, 1.00f},
+            {5200.0f, 1.00f}, {5600.0f, 0.98f}, {6000.0f, 0.89f}, {6500.0f, 0.75f}
+        }};
     };
 
     Engine();
