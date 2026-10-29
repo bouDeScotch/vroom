@@ -1,4 +1,5 @@
 #include "LapTime.hpp"
+#include "raylib.h"
 
 void LapTimer::update(float dt, bool lapCompleted, bool started) {
     if (!started) {
@@ -41,4 +42,19 @@ float LapTimer::getBestLapTime() const {
 void LapTimer::reset() {
     lapTimes_.clear();
     currentLapTime_ = 0.0f;
+}
+
+void LapTimer::draw(int x, int y) const {
+    const char* currentLapLabel = TextFormat("Current Lap: %.2f s", currentLapTime_);
+    DrawText(currentLapLabel, x, y, 20, RAYWHITE);
+
+    if (!lapTimes_.empty()) {
+        const char* lastLapLabel = TextFormat("Last Lap: %.2f s", lapTimes_.back());
+        DrawText(lastLapLabel, x, y + 30, 20, RAYWHITE);
+    }
+
+    if (getBestLapIndex() != -1) {
+        const char* bestLapLabel = TextFormat("Best Lap: %.2f s", getBestLapTime());
+        DrawText(bestLapLabel, x, y + 60, 20, RAYWHITE);
+    }
 }

@@ -55,6 +55,7 @@ public:
     int getCurrentGear() const { return currentGear_; }
     float getGearRatio() const;
     float getEngineRPM() const { return engine_.getRPM(); }
+    Vector2 getPrevPos() const { return prevPos_; }
     std::array<Vector2, 4> getCorners() const;
 
     // Rendu

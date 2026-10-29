@@ -7,6 +7,7 @@
 #include "../world/Track.hpp"
 #include "../audio/Enginesound.hpp"
 #include "../core/FollowCamera.hpp"
+#include "../world/LapTime.hpp"
 
 class RaceScene : public Scene {
 public:
@@ -18,9 +19,12 @@ public:
 
 private:
     std::string trackPath_;
+    bool lineCrossed_ = false;  // pour detecter le passage de la ligne de depart
     bool resetRequested_ = false;
     Track track_;            // declare apres trackPath_ : construit a partir de lui
     Car car_;
+    LapTimer lapTimer_;
+    bool raceStarted_ = false;
     InputMapper input_;
     Surface surface_ = Surface::Asphalt;  // surface sous la voiture (mise a jour dans update)
     FollowCamera camera_;

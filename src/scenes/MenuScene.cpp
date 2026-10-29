@@ -7,7 +7,7 @@
 
 MenuScene::MenuScene(Game& game) : Scene(game) {
     items_ = {
-        {"Jouer",   [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track1.png")); }},
+        {"Jouer",   [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track2.png")); }},
         {"Quitter", [this] { game_.quit(); }},
     };
 }

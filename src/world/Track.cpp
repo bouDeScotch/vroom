@@ -184,3 +184,20 @@ void Track::draw3D() const {
     rlEnd();
     rlSetTexture(0);
 }
+
+bool Track::crossedFinishLine(Vector2 prevPos, Vector2 newPos) const {
+    // On considere que la ligne de depart est perpendiculaire a l'angle de depart.
+    // On calcule la distance signe par rapport a cette ligne pour les deux positions.
+    const float angle = startAngleRad();
+    const float cosA = std::cos(angle), sinA = std::sin(angle);
+    const float dx = startPos_.x, dy = startPos_.y;
+    const float dPrev = (prevPos.x - dx) * cosA + (prevPos.y - dy) * sinA;
+    const float dNew  = (newPos.x  - dx) * cosA + (newPos.y  - dy) * sinA;
+    // On doit verifier qu'on est bien dans la largeur de la ligne de depart (perpendiculaire a l'angle de depart).
+    const float perpPrev = -(prevPos.x - dx) * sinA + (prevPos.y - dy) * cosA;
+    const float perpNew  = -(newPos.x  - dx) * sinA + (newPos.y  - dy) * cosA;
+    if (std::fabs(perpPrev) > config_.startLineWidth * 0.5f || std::fabs(perpNew) > config_.startLineWidth * 0.5f) {
+        return false;
+    }
+    return dPrev < 0.0f && dNew >= 0.0f;  // on ne compte que le passage dans le sens du tour
+}

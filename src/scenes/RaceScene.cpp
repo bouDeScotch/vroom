@@ -41,6 +41,7 @@ void RaceScene::update(float dt) {
     if (resetRequested_) {
         car_.reset(track_.startPosition(), track_.startAngleRad());
         camera_.snapTo(car_.getPosition(), car_.getAngle());
+        lapTimer_.reset();
         resetRequested_ = false;
     }
 
@@ -50,6 +51,19 @@ void RaceScene::update(float dt) {
 
     const CarInput& input = input_.step(dt);
     car_.update(dt, input);
+    
+    // Race started when car starts moving
+    if (!raceStarted_ && std::fabs(car_.getLongitudinalSpeed()) > 0.1f) {
+        raceStarted_ = true;
+    } else { // Don't check for line crossing before race actually starts
+        lineCrossed_ = track_.crossedFinishLine(car_.getPrevPos(), car_.getPosition());
+    }
+
+    lapTimer_.update(dt, lineCrossed_, raceStarted_);
+
+    lineCrossed_ = false;  // reset for next frame
+
+
     engineSound_.update(car_.getEngineRPM(), input.throttle);
 
     for (const Vector2& corner : car_.getCorners()) {
@@ -83,4 +97,7 @@ void RaceScene::draw() {
     const char* label = (g == -1) ? "R" : (g == 0) ? "N" : TextFormat("%d", g);
     DrawText(label, GetScreenWidth() - 60, GetScreenHeight() - 40, 40, RAYWHITE);
     car_.drawHud();
+
+    // Affichage du chrono
+    lapTimer_.draw(GetScreenWidth() - 200, 20);
 }
