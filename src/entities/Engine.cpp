@@ -28,21 +28,27 @@ float Engine::getTorqueAtRPM(float rpm, float throttle) const {
     return config_.maxTorque * factor * throttle;
 }
 
-void Engine::update(float dt, float throttleInput, float loadTorque) {
+void Engine::update(float dt, float throttleInput, float loadTorque, bool starter) {
     if (dt <= 0.0f) return;
-
-    // Il faut une manière de demarrer le moteur
-    // On va implementer un starter
-    if (!running_ && throttleInput_ > 0.0f) {
-        start();
-    }
 
     throttleInput_ = std::clamp(throttleInput, 0.0f, 1.0f);
 
     if (!running_) {
-        // Si le moteur est arrêté, on ne fait rien
-        rpm_ = 0.0f;
-        torque_ = 0.0f;
+        // Moteur coupe : seul le demarreur fournit du couple, et il subit la charge de la transmission
+        torque_ = starter
+            ? config_.starterTorque * std::clamp(1.0f - rpm_ / config_.starterMaxRPM, 0.0f, 1.0f)
+            : 0.0f;
+        const float drag = rpm_ > 0.0f ? config_.compressionTorque : 0.0f;
+        rpm_ += (torque_ - loadTorque - drag) / config_.inertia * dt * (60.0f / (2.0f * PI));
+        rpm_ = std::max(rpm_, 0.0f);
+
+        // Le moteur prend s'il tient assez de regime assez longtemps
+        if (starter && rpm_ >= config_.startRPM) {
+            crankTimer_ += dt;
+            if (crankTimer_ >= config_.crankTime) start();
+        } else {
+            crankTimer_ = 0.0f;
+        }
         return;
     }
 
@@ -80,6 +86,7 @@ void Engine::reset() {
     torque_ = 0.0f;
     throttleInput_ = 0.0f;
     stallTimer_ = 0.0f;
+    crankTimer_ = 0.0f;
     running_ = false;
 }
 
@@ -88,5 +95,6 @@ void Engine::start() {
         running_ = true;
         rpm_ = config_.idleRPM; // Démarrer le moteur au régime de ralenti
         stallTimer_ = 0.0f; // Réinitialiser le timer de calage
+        crankTimer_ = 0.0f;
     }
 }

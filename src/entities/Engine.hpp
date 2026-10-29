@@ -18,6 +18,13 @@ public:
         float frictionPerRPM = 0.006f; // Nm/rpm
         float limiterTorque = 0.0f; // Nm
 
+        // Demarreur : couple faible, qui s'effondre avec le regime (pas de quoi tirer la voiture en 5e)
+        float starterTorque = 90.0f; // Nm a l'arret
+        float starterMaxRPM = 400.0f; // Regime auquel le couple du demarreur s'annule
+        float compressionTorque = 40.0f; // Nm de resistance moteur coupe (compression, frottements)
+        float startRPM = 180.0f; // Regime a tenir pour que le moteur prenne
+        float crankTime = 0.3f; // Duree a tenir au-dessus de startRPM (s)
+
         // Fraction de maxTorque en fonction du regime, interpolee lineairement
         // Plateau turbo de 2000 a 5200 tr/min, puissance max 202 kW a 5600 tr/min
         std::array<TorquePoint, 8> torqueCurve{{
@@ -29,7 +36,7 @@ public:
     Engine();
     explicit Engine(const Config& config);
 
-    void update(float dt, float throttleInput, float loadTorque);
+    void update(float dt, float throttleInput, float loadTorque, bool starter = false);
     void reset();
     void start();
 
@@ -46,6 +53,7 @@ private:
     float torque_ = 0.0f;
     float throttleInput_ = 0.0f;
     float stallTimer_ = 0.0f;
+    float crankTimer_ = 0.0f;
 
     bool running_ = false;
 

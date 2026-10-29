@@ -31,6 +31,7 @@ void InputMapper::poll() {
                     - (float)(IsKeyDown(KEY_A));
     raw_.clutch = IsKeyDown(KEY_LEFT_CONTROL) ? 1.0f : 0.0f;
     raw_.handbrake = IsKeyDown(KEY_SPACE);
+    raw_.starter = IsKeyDown(KEY_R);
     if (IsKeyPressed(KEY_UP)) pendingShiftUp_ = true;
     if (IsKeyPressed(KEY_DOWN)) pendingShiftDown_ = true;
 
@@ -47,6 +48,7 @@ void InputMapper::poll() {
         }
         raw_.clutch = IsGamepadButtonDown(padIndex_, GAMEPAD_BUTTON_LEFT_FACE_LEFT) ? 1.0f : 0.0f;
         raw_.handbrake = IsGamepadButtonDown(padIndex_, GAMEPAD_BUTTON_RIGHT_FACE_LEFT);
+        raw_.starter = raw_.starter || IsGamepadButtonDown(padIndex_, GAMEPAD_BUTTON_MIDDLE_RIGHT);
         raw_.shiftUp = IsGamepadButtonDown(padIndex_, GAMEPAD_BUTTON_RIGHT_FACE_UP);
         raw_.shiftDown = IsGamepadButtonDown(padIndex_, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);
     }
@@ -67,6 +69,7 @@ const CarInput& InputMapper::step(float dt) {
     smooth_.brake = moveTowards(smooth_.brake, raw_.brake, dt * 8.0f);
     smooth_.clutch = moveTowards(smooth_.clutch, raw_.clutch, dt * 10.0f); // Rapide pour l'embrayage
     smooth_.handbrake = raw_.handbrake;
+    smooth_.starter = raw_.starter;
     smooth_.shiftUp = pendingShiftUp_;
     smooth_.shiftDown = pendingShiftDown_;
     pendingShiftUp_ = pendingShiftDown_ = false;

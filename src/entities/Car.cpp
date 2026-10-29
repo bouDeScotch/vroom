@@ -48,7 +48,7 @@ void Car::update(float dt, const CarInput& input) {
     const float r = wheelDiameter / 2.0f; // Rayon de la roue en mètre
 
     float Tc = computeLoadTorque(dt); // Couple de charge en Nm
-    engine_.update(dt, input.throttle, Tc);
+    engine_.update(dt, input.throttle, Tc, input.starter);
 
     float Fdrive = Tc * getGearRatio() / r; // Force de traction en N
     float Fres = resistanceForce(brake); // Force de résistance en N
@@ -149,6 +149,9 @@ void Car::drawHud() const {
     DrawText(clutchLabel, 20, GetScreenHeight() - 40, 20, RAYWHITE);
     const char* rpmLabel = TextFormat("RPM: %.2f", engine_.getRPM());
     DrawText(rpmLabel, 20, GetScreenHeight() - 20, 20, RAYWHITE);
+    if (!engine_.isRunning()) {
+        DrawText("Moteur coupe - maintenir R pour demarrer", 20, GetScreenHeight() - 150, 20, ORANGE);
+    }
 }
 
 float Car::resistanceForce(float brakeLvl) const {

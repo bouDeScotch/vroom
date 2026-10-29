@@ -6,6 +6,7 @@ struct CarInput {
     float steering = 0.0f; // -1.0f à 1.0f
     float clutch = 0.0f;  // 0.0f à 1.0f
     bool handbrake = false;
+    bool starter = false; // Maintenu pour lancer le demarreur
     bool shiftUp = false;
     bool shiftDown = false;
 };
