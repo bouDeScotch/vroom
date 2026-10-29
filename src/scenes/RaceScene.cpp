@@ -1,6 +1,7 @@
 #include "scenes/RaceScene.hpp"
 #include "scenes/MenuScene.hpp"
 #include "core/Game.hpp"
+#include "core/Paths.hpp"
 #include "raylib.h"
 #include "raymath.h"
 #include <utility>
@@ -24,7 +25,7 @@ RaceScene::RaceScene(Game& game, std::string trackPath)
       track_(trackPath_, TrackConfig{0.5f, 0.0f}) {  // 0.5 m/pixel, depart vers la droite (0 deg)
     car_.reset(track_.startPosition(), track_.startAngleRad());
     camera_.snapTo(car_.getPosition(), car_.getAngle());
-    car_.loadSprite(ASSETS_PATH "Cars/Car1.png");
+    car_.loadSprite(assetPath("Cars/Car1.png"));
 }
 
 void RaceScene::handleInput() {

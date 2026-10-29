@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")  # avant raylib, pour que les deux utilisent le meme runtime
+
 include(FetchContent)
 FetchContent_Declare(
   raylib
@@ -20,5 +22,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-  ASSETS_PATH="${CMAKE_SOURCE_DIR}/assets/")
+add_custom_command(TARGET vroom POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:vroom>/assets)

@@ -1,12 +1,13 @@
 // src/scenes/MenuScene.cpp
 #include "scenes/MenuScene.hpp"
 #include "../core/Game.hpp"
+#include "../core/Paths.hpp"
 #include "RaceScene.hpp"
 #include "raylib.h"
 
 MenuScene::MenuScene(Game& game) : Scene(game) {
     items_ = {
-        {"Jouer",   [this] { game_.changeScene<RaceScene>("assets/Tracks/Track1.png"); }},
+        {"Jouer",   [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track1.png")); }},
         {"Quitter", [this] { game_.quit(); }},
     };
 }
