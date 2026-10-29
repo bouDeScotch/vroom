@@ -13,6 +13,7 @@ enum class Surface : std::uint8_t { Asphalt, Gravel, Grass, Wall };
 struct TrackConfig {
     float metersPerPixel = 0.5f;  // echelle de l'image (0.5 => 1 pixel = 0,5 m)
     float startAngleDeg  = 0.0f;  // 0 = vers la droite (+x), positif = sens horaire a l'ecran (y vers le bas)
+    float startLineWidth = 100.0f;  // largeur de la ligne de depart (en metres)
 };
 
 // Circuit defini par une image: couleurs plates = surfaces, 1 pixel magenta = depart.
