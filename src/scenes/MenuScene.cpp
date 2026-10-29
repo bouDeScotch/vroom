@@ -6,7 +6,7 @@
 
 MenuScene::MenuScene(Game& game) : Scene(game) {
     items_ = {
-        {"Jouer",   [this] { game_.changeScene<RaceScene>("tracks/circuit1"); }},
+        {"Jouer",   [this] { game_.changeScene<RaceScene>("assets/Tracks/Track1.png"); }},
         {"Quitter", [this] { game_.quit(); }},
     };
 }
