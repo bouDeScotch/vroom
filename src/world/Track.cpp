@@ -103,6 +103,7 @@ Track::Track(const std::string& imagePath, TrackConfig config) : config_(config)
     }
     texture_ = LoadTextureFromImage(img);
     GenTextureMipmaps(&texture_);
+    SetTextureFilter(texture_, TEXTURE_FILTER_TRILINEAR);
     SetTextureFilter(texture_, TEXTURE_FILTER_ANISOTROPIC_16X);
     UnloadImage(img);
 }

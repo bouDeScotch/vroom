@@ -15,6 +15,7 @@ void Car::loadSprite(const std::string& path) {
     if (sprite_.id == 0) return;              // echec : le rectangle bleu reste
     GenTextureMipmaps(&sprite_);              // le sprite est reduit ~10x : evite le scintillement
     SetTextureFilter(sprite_, TEXTURE_FILTER_TRILINEAR);
+    SetTextureFilter(sprite_, TEXTURE_FILTER_ANISOTROPIC_16X);
 }
 
 void Car::update(float dt, const CarInput& input) {

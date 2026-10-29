@@ -3,7 +3,7 @@
 
 struct Window {
     Window(int w, int h, const char* title) {
-        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE);
+        SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
         InitWindow(w, h, title);
         InitAudioDevice();
     }
