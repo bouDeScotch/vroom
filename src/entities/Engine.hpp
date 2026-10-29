@@ -5,10 +5,10 @@ class Engine {
 public:
     struct Config {
         float idleRPM = 800.0f;
-        float maxRPM = 6000.0f;
+        float maxRPM = 6800.0f;
         float stallRPM = 450.0f;
 
-        float maxTorque = 200.0f; // Nm
+        float maxTorque = 1600.0f; // Nm
         float inertia = 0.3f; // kg*m^2
         float frictionTorque = 10.0f; // Nm
         float frictionPerRPM = 0.01f; // Nm/rpm

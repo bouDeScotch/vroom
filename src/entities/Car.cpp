@@ -5,12 +5,15 @@
 #include <cmath>
 
 void Car::update(float dt, const CarInput& input) {
+    prevPos_ = pos;
+    prevAngle_ = angle;
+
     // Gestion du changement de vitesse
     // On peut changer de vitesse seulement si l'embrayage est au moins au point mort
     // A 0 on appuie pas sur la touche donc on est embrayé, à 1 on appuie a fond donc on est debrayé
     if (input.clutch >= pointMort) { 
         if (input.shiftUp) {
-            if (currentGear < 5) currentGear++;
+            if (currentGear < maxGear) currentGear++;
         } else if (input.shiftDown) {
             if (currentGear > -1) currentGear--;
         }
@@ -109,4 +112,15 @@ float Car::computeLoadTorque(float dt) const {
 
     const float Tlock = (slip / dt + Te / Je + Tr / Jv) / (1.0f / Je + 1.0f / Jv); // Couple de verrouillage en Nm
     return std::clamp(Tlock, -capacity, capacity); // On limite le couple de charge à la capacité de l'embrayage
+}
+
+std::array<Vector2, 4> Car::getCorners() const {
+    const float hx = size.x * 0.5f, hy = size.y * 0.5f;
+    const float c = cosf(angle), s = sinf(angle);
+    std::array<Vector2, 4> out;
+    const float lx[4] = {+hx, +hx, -hx, -hx};
+    const float ly[4] = {+hy, -hy, -hy, +hy};
+    for (int i = 0; i < 4; ++i)
+        out[i] = {pos.x + lx[i] * c - ly[i] * s, pos.y + lx[i] * s + ly[i] * c};
+    return out;
 }

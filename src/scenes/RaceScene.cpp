@@ -45,6 +45,10 @@ void RaceScene::update(float dt) {
 
     const CarInput& input = input_.step(dt);
     car_.update(dt, input);
+
+    for (const Vector2& corner : car_.getCorners()) {
+        if (track_.isWall(corner)) { car_.collide(); break; }
+    }
 }
 
 void RaceScene::draw() {
