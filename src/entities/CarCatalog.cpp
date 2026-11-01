@@ -16,7 +16,7 @@ void deriveChassis(CarSpec& s, float frontWeightFrac, float tireStiffnessFactor)
 CarModel subaruWrx() {
     CarModel m;
     m.name = "Subaru WRX";
-    m.sprite = "Cars/Car1.png";
+    m.sprite = "Cars/WRX.png";
     // CarSpec, Engine::Config et EngineSynth::Config par defaut = WRX (FA24 2.4 L turbo, boxer 4 cylindres)
     return m;
 }
