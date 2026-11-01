@@ -19,10 +19,10 @@ const char* surfaceName(Surface s) {
 }
 }  // namespace
 
-RaceScene::RaceScene(Game& game, std::string trackPath)
+RaceScene::RaceScene(Game& game, std::string trackPath, std::string checkpointsPath)
     : Scene(game),
       trackPath_(std::move(trackPath)),
-      track_(trackPath_, TrackConfig{0.5f, 0.0f}) {  // 0.5 m/pixel, depart vers la droite (0 deg)
+      track_(trackPath_, TrackConfig{0.5f, 0.0f}, checkpointsPath) {  // 0.5 m/pixel, depart vers la droite (0 deg)
     car_.reset(track_.startPosition(), track_.startAngleRad());
     camera_.snapTo(car_.getPosition(), car_.getAngle());
     car_.loadSprite(assetPath("Cars/Car1.png"));
@@ -43,6 +43,7 @@ void RaceScene::update(float dt) {
         camera_.snapTo(car_.getPosition(), car_.getAngle());
         lapTimer_.reset();
         raceStarted_ = false;
+        nextCheckpoint_ = 1;
         lineCrossed_ = -1.0f;
         resetRequested_ = false;
     }
@@ -57,8 +58,17 @@ void RaceScene::update(float dt) {
     // Race started when car starts moving
     if (!raceStarted_ && std::fabs(car_.getLongitudinalSpeed()) > 0.1f) {
         raceStarted_ = true;
-    } else { // Don't check for line crossing before race actually starts
+    } else {
+        // Les checkpoints doivent etre franchis dans l'ordre ; ils sont testes avant la ligne
+        // pour qu'un dernier checkpoint touche dans la meme frame compte.
+        if (track_.checkpointAt(car_.getPosition()) == nextCheckpoint_) ++nextCheckpoint_;
+
         lineCrossed_ = track_.crossedFinishLine(car_.getPrevPos(), car_.getPosition());
+        if (lineCrossed_ >= 0.0f) {
+            // Sans checkpoints (checkpointCount() == 0) tout passage de ligne est valide
+            if (nextCheckpoint_ > track_.checkpointCount()) nextCheckpoint_ = 1;
+            else lineCrossed_ = -1.0f;  // tour incomplet : on ignore ce passage
+        }
     }
 
     lapTimer_.update(dt, lineCrossed_, raceStarted_);

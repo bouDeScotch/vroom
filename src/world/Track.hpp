@@ -20,7 +20,9 @@ struct TrackConfig {
 // Coordonnees monde en METRES, origine en haut a gauche de l'image, x vers la droite, y vers le bas.
 class Track {
 public:
-    explicit Track(const std::string& imagePath, TrackConfig config = {});
+    // checkpointsPath (optionnel) : image de meme taille que le circuit, les pixels opaques rgb(0,0,n)
+    // forment le checkpoint n (1..N, a franchir dans l'ordre). Les pixels transparents sont ignores.
+    explicit Track(const std::string& imagePath, TrackConfig config = {}, const std::string& checkpointsPath = "");
     ~Track();
 
     Track(const Track&) = delete;
@@ -41,15 +43,23 @@ public:
     Vector2 sizeMeters() const;
     float crossedFinishLine(Vector2 prevPos, Vector2 newPos) const;
 
+    // Numero du checkpoint sous un point (en metres), 0 s'il n'y en a pas.
+    int checkpointAt(Vector2 posMeters) const;
+    int checkpointCount() const { return checkpointCount_; }  // 0 si le circuit n'a pas de checkpoints
+
     // A appeler entre BeginMode2D et EndMode2D.
     void draw(float pixelsPerMeter) const;
     void draw3D() const;
     void drawGround() const;  // sol vert autour du circuit, en 3D
 private:
+    void loadCheckpoints(const std::string& path);
+
     TrackConfig config_;
     int width_  = 0;
     int height_ = 0;
     std::vector<std::uint8_t> surfaces_;  // 1 octet par pixel, valeurs de Surface
+    std::vector<std::uint8_t> checkpoints_;  // 1 octet par pixel, 0 = aucun checkpoint
+    int checkpointCount_ = 0;
     Vector2 startPos_{};
     Texture2D texture_{};
 };

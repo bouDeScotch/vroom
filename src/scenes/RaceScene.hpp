@@ -11,7 +11,7 @@
 
 class RaceScene : public Scene {
 public:
-    RaceScene(Game& game, std::string trackPath);   // 2 arguments
+    RaceScene(Game& game, std::string trackPath, std::string checkpointsPath = "");
 
     void update(float dt) override;
     void draw() override;
@@ -25,6 +25,7 @@ private:
     Car car_;
     LapTimer lapTimer_;
     bool raceStarted_ = false;
+    int nextCheckpoint_ = 1;  // prochain checkpoint a franchir; > checkpointCount() = tour valide
     InputMapper input_;
     Surface surface_ = Surface::Asphalt;  // surface sous la voiture (mise a jour dans update)
     FollowCamera camera_;

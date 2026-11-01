@@ -50,7 +50,7 @@ Color displayColor(Surface s) {
 
 }  // namespace
 
-Track::Track(const std::string& imagePath, TrackConfig config) : config_(config) {
+Track::Track(const std::string& imagePath, TrackConfig config, const std::string& checkpointsPath) : config_(config) {
     Image img = LoadImage(imagePath.c_str());
     if (img.data == nullptr) {
         throw std::runtime_error("Track: impossible de charger l'image " + imagePath);
@@ -106,6 +106,43 @@ Track::Track(const std::string& imagePath, TrackConfig config) : config_(config)
     SetTextureFilter(texture_, TEXTURE_FILTER_TRILINEAR);
     SetTextureFilter(texture_, TEXTURE_FILTER_ANISOTROPIC_16X);
     UnloadImage(img);
+
+    if (!checkpointsPath.empty()) loadCheckpoints(checkpointsPath);
+}
+
+void Track::loadCheckpoints(const std::string& path) {
+    Image img = LoadImage(path.c_str());
+    if (img.data == nullptr) {
+        throw std::runtime_error("Track: impossible de charger l'image de checkpoints " + path);
+    }
+    if (img.width != width_ || img.height != height_) {
+        UnloadImage(img);
+        throw std::runtime_error("Track: l'image de checkpoints doit avoir la meme taille que le circuit: " + path);
+    }
+    ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+
+    // Seuls les pixels totalement opaques rgb(0,0,n) comptent : les bords anti-crenele
+    // (alpha partiel) produisent des couleurs parasites qu'on ignore.
+    const auto* src = static_cast<const unsigned char*>(img.data);
+    checkpoints_.assign(surfaces_.size(), 0);
+    checkpointCount_ = 0;
+    for (std::size_t i = 0; i < checkpoints_.size(); ++i) {
+        if (src[i * 4 + 3] == 255 && src[i * 4 + 0] == 0 && src[i * 4 + 1] == 0 && src[i * 4 + 2] > 0) {
+            checkpoints_[i] = src[i * 4 + 2];
+            if (checkpoints_[i] > checkpointCount_) checkpointCount_ = checkpoints_[i];
+        }
+    }
+    UnloadImage(img);
+}
+
+int Track::checkpointAt(Vector2 posMeters) const {
+    if (checkpointCount_ == 0) return 0;
+    const float fx = std::floor(posMeters.x / config_.metersPerPixel);
+    const float fy = std::floor(posMeters.y / config_.metersPerPixel);
+    if (!(fx >= 0.0f && fy >= 0.0f && fx < static_cast<float>(width_) && fy < static_cast<float>(height_))) {
+        return 0;
+    }
+    return checkpoints_[static_cast<std::size_t>(fy) * width_ + static_cast<std::size_t>(fx)];
 }
 
 Track::~Track() {
