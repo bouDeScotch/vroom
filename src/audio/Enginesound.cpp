@@ -4,7 +4,7 @@
 
 EngineSynth* EngineSound::active_ = nullptr;
 
-EngineSound::EngineSound() : synth_(static_cast<float>(kSampleRate)) {
+EngineSound::EngineSound(const EngineSynth::Config& config) : synth_(static_cast<float>(kSampleRate), config) {
     SetAudioStreamBufferSizeDefault(1024);               // ~23 ms de latence ; a appeler avant LoadAudioStream
     stream_ = LoadAudioStream(kSampleRate, 32, 1);       // 32 bits = float, mono
     active_ = &synth_;

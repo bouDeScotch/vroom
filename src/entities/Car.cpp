@@ -5,6 +5,24 @@
 #include <cmath>
 #include <rlgl.h>
 
+namespace {
+LateralParams lateralParams(const CarSpec& s) {
+    LateralParams p;
+    p.mass = s.weight;
+    p.wheelBase = s.wheelBase;
+    p.frontWeightFrac = s.frontWeightFrac;
+    p.yawInertia = s.yawInertia;
+    p.cornerStiffFront = s.cornerStiffness;
+    p.cornerStiffRear = s.cornerStiffness * s.cornerStiffRearRatio;
+    return p;
+}
+}  // namespace
+
+Car::Car(const CarModel& model)
+    : spec_(model.spec),
+      engine_(model.engine),
+      lateral_(lateralParams(model.spec)) {}
+
 Car::~Car() {
     if (sprite_.id != 0) UnloadTexture(sprite_);
 }
@@ -51,7 +69,19 @@ void Car::update(float dt, const CarInput& input) {
     const float Tc = computeLoadTorque(dt); // Couple de charge en Nm
     engine_.update(dt, input.throttle, Tc, input.starter);
 
-    const float Fdrive = Tc * getGearRatio() / r; // Force de traction en N
+    const float Fdemand = Tc * getGearRatio() / r; // Force de traction demandee par la transmission en N
+
+    // Limite de traction : chaque essieu ne transmet que ce qui reste de son adherence une fois la force
+    // laterale prise (cercle de friction), avec une marge (spec_.tractionControl) pour garder de la tenue laterale.
+    // Sans cette limite, un essieu moteur qui reçoit plus de force que son adherence perd presque tout son
+    // grip lateral et la voiture part en tete-a-queue au moindre coup de volant.
+    const float mu = grip_ * spec_.tireGrip;
+    const float tractionUse = std::clamp(1.0f - 0.1f * spec_.tractionControl, 0.2f, 1.0f);
+    const float availFront = tractionUse * std::sqrt(std::max(std::pow(lateral_.frontFrictionLimit(mu), 2.0f) - std::pow(lateral_.lateralForceFront(), 2.0f), 0.0f));
+    const float availRear  = tractionUse * std::sqrt(std::max(std::pow(lateral_.rearFrictionLimit(mu), 2.0f) - std::pow(lateral_.lateralForceRear(), 2.0f), 0.0f));
+    const float driveFront = std::clamp(spec_.driveFrontShare * Fdemand, -availFront, availFront);
+    const float driveRear  = std::clamp((1.0f - spec_.driveFrontShare) * Fdemand, -availRear, availRear);
+    const float Fdrive = driveFront + driveRear; // Force de traction transmise a la route en N
     const float Fres = resistanceForce(brake_);   // Force de résistance en N
     forwardSpeed_ += (Fdrive - Fres) / spec_.weight * dt; // Acceleration = Force / Masse
 
@@ -61,9 +91,9 @@ void Car::update(float dt, const CarInput& input) {
 
     // Gestion de la position et de la vitesse de la voiture
     const float brakeForce = brake_ * spec_.maxBrakeForce * std::tanh(forwardSpeed_ / 0.5f);
-    const float fxFront = 0.5f * Fdrive - 0.6f * brakeForce;
-    const float fxRear  = 0.5f * Fdrive - 0.4f * brakeForce;
-    lateral_.step(dt, forwardSpeed_, delta, grip_, fxFront, fxRear);
+    const float fxFront = driveFront - 0.6f * brakeForce;
+    const float fxRear  = driveRear - 0.4f * brakeForce;
+    lateral_.step(dt, forwardSpeed_, delta, mu, fxFront, fxRear);
     forwardSpeed_ += lateral_.longitudinalAccelExtra() * dt;
 
     const float vy = lateral_.lateralSpeed();
@@ -81,7 +111,7 @@ void Car::reset(Vector2 startPos, float startAngle) {
     angle_ = startAngle;
     currentGear_ = 0;
     wheelSpeeds_.fill(0.0f);
-    engine_ = Engine();
+    engine_.reset();
     lateral_.reset();
 }
 
@@ -97,9 +127,7 @@ float Car::getSpeed() const {
 }
 
 float Car::getGearRatio() const {
-    const float g = spec_.gearRatios[currentGear_ + 1];
-    if (std::fabs(g) < 1e-6f) return 0.0f;   // point mort
-    return spec_.finalDrive / g;             // (1/g) x pont
+    return spec_.gearRatios[currentGear_ + 1] * spec_.finalDrive;   // 0 au point mort
 }
 
 void Car::draw() const {

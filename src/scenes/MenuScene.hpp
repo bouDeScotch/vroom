@@ -6,7 +6,8 @@
 
 class MenuScene : public Scene {
 public:
-    explicit MenuScene(Game& game);
+    // carIndex : voiture choisie dans CarSelectScene (indice dans carCatalog())
+    MenuScene(Game& game, int carIndex);
 
     void handleInput() override;
 
@@ -22,4 +23,5 @@ private:
 
     std::vector<Item> items_;
     int selected_ = 0;
+    int carIndex_ = 0;
 };

@@ -19,13 +19,15 @@ const char* surfaceName(Surface s) {
 }
 }  // namespace
 
-RaceScene::RaceScene(Game& game, std::string trackPath, std::string checkpointsPath)
+RaceScene::RaceScene(Game& game, const CarModel& carModel, std::string trackPath, std::string checkpointsPath)
     : Scene(game),
       trackPath_(std::move(trackPath)),
-      track_(trackPath_, TrackConfig{0.5f, 0.0f}, checkpointsPath) {  // 0.5 m/pixel, depart vers la droite (0 deg)
+      track_(trackPath_, TrackConfig{0.5f, 0.0f}, checkpointsPath),
+      car_(carModel),
+      engineSound_(carModel.sound) {  // 0.5 m/pixel, depart vers la droite (0 deg)
     car_.reset(track_.startPosition(), track_.startAngleRad());
     camera_.snapTo(car_.getPosition(), car_.getAngle());
-    car_.loadSprite(assetPath("Cars/Car1.png"));
+    car_.loadSprite(assetPath(carModel.sprite));
 }
 
 void RaceScene::handleInput() {
@@ -79,7 +81,7 @@ void RaceScene::update(float dt) {
     engineSound_.update(car_.getEngineRPM(), input.throttle);
 
     for (const Vector2& corner : car_.getCorners()) {
-        if (track_.isWall(corner)) { car_.collide(); break; }
+        if (track_.isWall(corner)) { car_.collide(0.5f); break; }
     }
 }
 

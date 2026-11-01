@@ -51,6 +51,10 @@ public:
     float getInertia() const { return config_.inertia; };
     bool isRunning() const { return running_; };
 
+    // Couple (Nm) a pleine charge a un regime donne, pour afficher les caracteristiques du moteur
+    float fullThrottleTorque(float rpm) const { return getTorqueAtRPM(rpm, 1.0f); }
+    const Config& config() const { return config_; }
+
 private:
     Config config_;
 

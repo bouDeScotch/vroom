@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include "../core/Scene.hpp"
 #include "../entities/Car.hpp"
+#include "../entities/CarModel.hpp"
 #include "../entities/Engine.hpp"
 #include "../world/Track.hpp"
 #include "../audio/Enginesound.hpp"
@@ -11,7 +12,7 @@
 
 class RaceScene : public Scene {
 public:
-    RaceScene(Game& game, std::string trackPath, std::string checkpointsPath = "");
+    RaceScene(Game& game, const CarModel& carModel, std::string trackPath, std::string checkpointsPath = "");
 
     void update(float dt) override;
     void draw() override;

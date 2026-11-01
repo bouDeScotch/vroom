@@ -1,13 +1,13 @@
 // src/core/Game.cpp
 #include "Game.hpp"
-#include "../scenes/MenuScene.hpp"
+#include "../scenes/CarSelectScene.hpp"
 #include "Paths.hpp"
 #include <algorithm>
 
 Game::Game()
     : window_(1280, 720, "vroom"),
       assets_(assetPath()) {
-    changeScene<MenuScene>();
+    changeScene<CarSelectScene>();
     scene_ = std::move(pending_);
 }
 

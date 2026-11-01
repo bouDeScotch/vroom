@@ -7,7 +7,7 @@
 
 class EngineSound {
 public:
-    EngineSound();
+    explicit EngineSound(const EngineSynth::Config& config);
     ~EngineSound();
     EngineSound(const EngineSound&) = delete;
     EngineSound& operator=(const EngineSound&) = delete;

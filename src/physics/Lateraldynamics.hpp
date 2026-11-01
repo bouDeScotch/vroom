@@ -31,7 +31,13 @@ public:
     float distCgToFront() const { return p_.wheelBase * (1.0f - p_.frontWeightFrac); }  // a
     float distCgToRear()  const { return p_.wheelBase * p_.frontWeightFrac; }           // b
 
-    void reset() { vy_ = r_ = axExtra_ = slipF_ = slipR_ = 0.0f; }
+    void reset() { vy_ = r_ = axExtra_ = slipF_ = slipR_ = fyF_ = fyR_ = 0.0f; }
+
+    // Adherence maximale de chaque essieu (N) a la surface mu : force combinee (longitudinale + laterale) qu'il peut transmettre.
+    float frontFrictionLimit(float mu) const { return mu * p_.gripFront * p_.mass * 9.81f * p_.frontWeightFrac; }
+    float rearFrictionLimit(float mu) const { return mu * p_.gripRear * p_.mass * 9.81f * (1.0f - p_.frontWeightFrac); }
+    float lateralForceFront() const { return fyF_; }  // N, dernier pas de temps
+    float lateralForceRear() const { return fyR_; }
 
     float lateralSpeed() const { return vy_; }        // m/s, repere voiture : positif vers la droite de la voiture (y vers le bas a l ecran)
     float yawRate() const { return r_; }              // rad/s
@@ -61,6 +67,8 @@ public:
         // Force laterale dans le repere de la roue : elle s'oppose au glissement
         const float fyF = -tireForce(slipF_, nF, mu * p_.gripFront, fxFront, p_.cornerStiffFront);
         const float fyR = -tireForce(slipR_, nR, mu * p_.gripRear, fxRear, p_.cornerStiffRear);
+        fyF_ = fyF;
+        fyR_ = fyR;
 
         const float fyBody = fyF * cd + fyR;
         axExtra_ = vy_ * r_ - fyF * sd / p_.mass;
@@ -92,5 +100,5 @@ private:
     }
 
     LateralParams p_{};
-    float vy_ = 0.0f, r_ = 0.0f, axExtra_ = 0.0f, slipF_ = 0.0f, slipR_ = 0.0f;
+    float vy_ = 0.0f, r_ = 0.0f, axExtra_ = 0.0f, slipF_ = 0.0f, slipR_ = 0.0f, fyF_ = 0.0f, fyR_ = 0.0f;
 };
