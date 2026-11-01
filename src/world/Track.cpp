@@ -1,42 +1,14 @@
 #include "Track.hpp"
 
-#include <array>
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <rlgl.h>
 
 namespace {
 
-struct PaletteEntry {
-    Surface surface;
-    int r, g, b;
-};
-
-// Ordre = priorite en cas d'egalite (le mur passe avant l'herbe pour ne jamais creer de trou).
-constexpr std::array<PaletteEntry, 4> kPalette{{
-    {Surface::Wall,    200,   0,   0},
-    {Surface::Grass,     0, 160,   0},
-    {Surface::Gravel,  210, 190, 130},
-    {Surface::Asphalt, 128, 128, 128},
-}};
-
-constexpr int kStartR = 255, kStartG = 0, kStartB = 255;
-
-Surface nearestSurface(int r, int g, int b) {
-    int best = 0;
-    long bestDist = -1;
-    for (int i = 0; i < static_cast<int>(kPalette.size()); ++i) {
-        const long dr = r - kPalette[i].r;
-        const long dg = g - kPalette[i].g;
-        const long db = b - kPalette[i].b;
-        const long d = dr * dr + dg * dg + db * db;
-        if (bestDist < 0 || d < bestDist) {
-            bestDist = d;
-            best = i;
-        }
-    }
-    return kPalette[best].surface;
-}
+// Les valeurs 0..3 d'un circuit compressé (.trk) sont celles de Surface, voir tools/compress_assets.py
+constexpr std::uint8_t kStartCode = 4;  // pixel de depart (magenta dans l'image d'origine)
 
 Color displayColor(Surface s) {
     switch (s) {
@@ -48,91 +20,105 @@ Color displayColor(Surface s) {
     return Color{0, 0, 0, 255};
 }
 
+struct RleImage {
+    int width = 0;
+    int height = 0;
+    std::vector<std::uint8_t> pixels;  // une valeur par pixel, ligne par ligne
+};
+
+// Fichier .trk / .cpt (little-endian) : uint16 largeur, uint16 hauteur, puis des runs
+// (uint8 valeur, uint24 repetitions) qui couvrent exactement largeur * hauteur pixels.
+RleImage readRle(const std::string& path) {
+    int size = 0;
+    unsigned char* data = LoadFileData(path.c_str(), &size);
+    if (data == nullptr) {
+        throw std::runtime_error("Track: impossible de lire " + path);
+    }
+    struct Guard {
+        unsigned char* p;
+        ~Guard() { UnloadFileData(p); }
+    } guard{data};
+
+    if (size < 4 || (size - 4) % 4 != 0) {
+        throw std::runtime_error("Track: fichier invalide (taille) " + path);
+    }
+
+    RleImage img;
+    img.width = data[0] | (data[1] << 8);
+    img.height = data[2] | (data[3] << 8);
+    const std::size_t total = static_cast<std::size_t>(img.width) * static_cast<std::size_t>(img.height);
+    img.pixels.resize(total);
+
+    std::size_t filled = 0;
+    for (int i = 4; i < size; i += 4) {
+        const std::size_t count = data[i + 1] | (data[i + 2] << 8) | (data[i + 3] << 16);
+        if (count > total - filled) {
+            throw std::runtime_error("Track: fichier invalide (trop de pixels) " + path);
+        }
+        std::fill_n(img.pixels.begin() + static_cast<std::ptrdiff_t>(filled), count, data[i]);
+        filled += count;
+    }
+    if (filled != total) {
+        throw std::runtime_error("Track: fichier invalide (pixels manquants) " + path);
+    }
+    return img;
+}
+
 }  // namespace
 
-Track::Track(const std::string& imagePath, TrackConfig config, const std::string& checkpointsPath) : config_(config) {
-    Image img = LoadImage(imagePath.c_str());
-    if (img.data == nullptr) {
-        throw std::runtime_error("Track: impossible de charger l'image " + imagePath);
-    }
-    ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+Track::Track(const std::string& trackPath, TrackConfig config, const std::string& checkpointsPath) : config_(config) {
+    RleImage file = readRle(trackPath);
+    width_ = file.width;
+    height_ = file.height;
+    surfaces_ = std::move(file.pixels);
 
-    width_ = img.width;
-    height_ = img.height;
-    surfaces_.resize(static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_));
-
-    const auto* src = static_cast<const unsigned char*>(img.data);
-    bool startFound = false;
     double sumX = 0.0, sumY = 0.0;
     long startCount = 0;
-
     for (int y = 0; y < height_; ++y) {
         for (int x = 0; x < width_; ++x) {
-            const std::size_t i = static_cast<std::size_t>(y) * width_ + x;
-            const int r = src[i * 4 + 0];
-            const int g = src[i * 4 + 1];
-            const int b = src[i * 4 + 2];
-
-            if (r == kStartR && g == kStartG && b == kStartB) {
+            std::uint8_t& s = surfaces_[static_cast<std::size_t>(y) * width_ + x];
+            if (s == kStartCode) {
                 sumX += x + 0.5;
                 sumY += y + 0.5;
                 ++startCount;
-                startFound = true;
-                surfaces_[i] = static_cast<std::uint8_t>(Surface::Asphalt);  // le depart est sur la route
-            } else {
-                surfaces_[i] = static_cast<std::uint8_t>(nearestSurface(r, g, b));
+                s = static_cast<std::uint8_t>(Surface::Asphalt);  // le depart est sur la route
+            } else if (s > static_cast<std::uint8_t>(Surface::Wall)) {
+                throw std::runtime_error("Track: type de terrain inconnu dans " + trackPath);
             }
         }
     }
-
-    if (!startFound) {
-        UnloadImage(img);
-        throw std::runtime_error("Track: aucun pixel de depart magenta (255, 0, 255) dans " + imagePath);
+    if (startCount == 0) {
+        throw std::runtime_error("Track: aucun pixel de depart dans " + trackPath);
     }
     startPos_ = Vector2{static_cast<float>(sumX / startCount) * config_.metersPerPixel,
                         static_cast<float>(sumY / startCount) * config_.metersPerPixel};
 
-    // Texture d'affichage = image nettoyee (couleurs de palette uniquement).
-    auto* dst = static_cast<unsigned char*>(img.data);
+    // Texture d'affichage construite a partir des surfaces (couleurs de palette uniquement).
+    std::vector<unsigned char> rgba(surfaces_.size() * 4);
     for (std::size_t i = 0; i < surfaces_.size(); ++i) {
         const Color c = displayColor(static_cast<Surface>(surfaces_[i]));
-        dst[i * 4 + 0] = c.r;
-        dst[i * 4 + 1] = c.g;
-        dst[i * 4 + 2] = c.b;
-        dst[i * 4 + 3] = 255;
+        rgba[i * 4 + 0] = c.r;
+        rgba[i * 4 + 1] = c.g;
+        rgba[i * 4 + 2] = c.b;
+        rgba[i * 4 + 3] = 255;
     }
+    Image img{rgba.data(), width_, height_, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};  // LoadTextureFromImage copie les pixels
     texture_ = LoadTextureFromImage(img);
     GenTextureMipmaps(&texture_);
     SetTextureFilter(texture_, TEXTURE_FILTER_TRILINEAR);
     SetTextureFilter(texture_, TEXTURE_FILTER_ANISOTROPIC_16X);
-    UnloadImage(img);
 
     if (!checkpointsPath.empty()) loadCheckpoints(checkpointsPath);
 }
 
 void Track::loadCheckpoints(const std::string& path) {
-    Image img = LoadImage(path.c_str());
-    if (img.data == nullptr) {
-        throw std::runtime_error("Track: impossible de charger l'image de checkpoints " + path);
+    RleImage file = readRle(path);
+    if (file.width != width_ || file.height != height_) {
+        throw std::runtime_error("Track: les checkpoints doivent avoir la meme taille que le circuit: " + path);
     }
-    if (img.width != width_ || img.height != height_) {
-        UnloadImage(img);
-        throw std::runtime_error("Track: l'image de checkpoints doit avoir la meme taille que le circuit: " + path);
-    }
-    ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
-
-    // Seuls les pixels totalement opaques rgb(0,0,n) comptent : les bords anti-crenele
-    // (alpha partiel) produisent des couleurs parasites qu'on ignore.
-    const auto* src = static_cast<const unsigned char*>(img.data);
-    checkpoints_.assign(surfaces_.size(), 0);
-    checkpointCount_ = 0;
-    for (std::size_t i = 0; i < checkpoints_.size(); ++i) {
-        if (src[i * 4 + 3] == 255 && src[i * 4 + 0] == 0 && src[i * 4 + 1] == 0 && src[i * 4 + 2] > 0) {
-            checkpoints_[i] = src[i * 4 + 2];
-            if (checkpoints_[i] > checkpointCount_) checkpointCount_ = checkpoints_[i];
-        }
-    }
-    UnloadImage(img);
+    // 0 = aucun checkpoint, n = n-ieme checkpoint (1..N)
+    checkpoints_ = std::move(file.pixels);
+    checkpointCount_ = checkpoints_.empty() ? 0 : *std::max_element(checkpoints_.begin(), checkpoints_.end());
 }
 
 int Track::checkpointAt(Vector2 posMeters) const {

@@ -7,8 +7,9 @@
 
 MenuScene::MenuScene(Game& game) : Scene(game) {
     items_ = {
-        {"Jouer",   [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track2.png")); }},
-        {"Circuit 1 (checkpoints)", [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track1.png"), assetPath("Tracks/Checkpoints1.png")); }},
+        {"Circuit 1",   [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track2.trk"), assetPath("Tracks/Checkpoints2.cpt")); }},
+        {"Circuit 2", [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Track1.trk"), assetPath("Tracks/Checkpoints1.cpt")); }},
+        {"Straight (Testing)", [this] { game_.changeScene<RaceScene>(assetPath("Tracks/Straight.trk")); }},
         {"Quitter", [this] { game_.quit(); }},
     };
 }

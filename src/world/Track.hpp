@@ -16,13 +16,14 @@ struct TrackConfig {
     float startLineWidth = 100.0f;  // largeur de la ligne de depart (en metres)
 };
 
-// Circuit defini par une image: couleurs plates = surfaces, 1 pixel magenta = depart.
+// Circuit defini par une image de surfaces (compressee en .trk), avec un pixel de depart.
 // Coordonnees monde en METRES, origine en haut a gauche de l'image, x vers la droite, y vers le bas.
 class Track {
 public:
-    // checkpointsPath (optionnel) : image de meme taille que le circuit, les pixels opaques rgb(0,0,n)
-    // forment le checkpoint n (1..N, a franchir dans l'ordre). Les pixels transparents sont ignores.
-    explicit Track(const std::string& imagePath, TrackConfig config = {}, const std::string& checkpointsPath = "");
+    // trackPath : circuit compresse (.trk). checkpointsPath (optionnel) : masque de checkpoints (.cpt) de
+    // meme taille, avec le checkpoint n en valeur n (1..N, a franchir dans l'ordre).
+    // Ces fichiers sont produits par tools/compress_assets.py a partir de assets_uncompressed/.
+    explicit Track(const std::string& trackPath, TrackConfig config = {}, const std::string& checkpointsPath = "");
     ~Track();
 
     Track(const Track&) = delete;
