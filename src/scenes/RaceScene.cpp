@@ -42,6 +42,8 @@ void RaceScene::update(float dt) {
         car_.reset(track_.startPosition(), track_.startAngleRad());
         camera_.snapTo(car_.getPosition(), car_.getAngle());
         lapTimer_.reset();
+        raceStarted_ = false;
+        lineCrossed_ = -1.0f;
         resetRequested_ = false;
     }
 
@@ -61,7 +63,7 @@ void RaceScene::update(float dt) {
 
     lapTimer_.update(dt, lineCrossed_, raceStarted_);
 
-    lineCrossed_ = false;  // reset for next frame
+    lineCrossed_ = -1.0f;  // reset for next frame
 
 
     engineSound_.update(car_.getEngineRPM(), input.throttle);

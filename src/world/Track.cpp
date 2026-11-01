@@ -185,7 +185,8 @@ void Track::draw3D() const {
     rlSetTexture(0);
 }
 
-bool Track::crossedFinishLine(Vector2 prevPos, Vector2 newPos) const {
+float Track::crossedFinishLine(Vector2 prevPos, Vector2 newPos) const {
+    // Renvoie la fraction de la frame ou la ligne est franchie, -1 si pas franchie ou dans le mauvais sens.
     // On considere que la ligne de depart est perpendiculaire a l'angle de depart.
     // On calcule la distance signe par rapport a cette ligne pour les deux positions.
     const float angle = startAngleRad();
@@ -197,7 +198,12 @@ bool Track::crossedFinishLine(Vector2 prevPos, Vector2 newPos) const {
     const float perpPrev = -(prevPos.x - dx) * sinA + (prevPos.y - dy) * cosA;
     const float perpNew  = -(newPos.x  - dx) * sinA + (newPos.y  - dy) * cosA;
     if (std::fabs(perpPrev) > config_.startLineWidth * 0.5f || std::fabs(perpNew) > config_.startLineWidth * 0.5f) {
-        return false;
+        return -1.0f;
     }
-    return dPrev < 0.0f && dNew >= 0.0f;  // on ne compte que le passage dans le sens du tour
+    // Compter passage uniquement dans le bon sens
+    if (dPrev >= 0.0f || dNew <= 0.0f) {
+        return -1.0f;
+    }
+    // On a un passage de dPrev < 0 et dNew > 0, on calcule la fraction de la frame.
+    return dPrev / (dPrev - dNew);
 }

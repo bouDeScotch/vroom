@@ -1,15 +1,19 @@
 #include "LapTime.hpp"
 #include "raylib.h"
 
-void LapTimer::update(float dt, bool lapCompleted, bool started) {
+void LapTimer::update(float dt, float t, bool started) {
     if (!started) {
         return; // Do not update if the timer hasn't started
     }
 
+    bool const lapCompleted = (t >= 0.0f); // t is the fraction of the frame at which the lap was completed, if any
+
     currentLapTime_ += dt;
     if (lapCompleted) {
-        lapTimes_.push_back(currentLapTime_);
-        currentLapTime_ = 0.0f;
+        // t indicates the time at which the lap was completed as a fraction of the current frame (dt)
+        // We can use this to adjust both the current lap time and the next lap time to start from the correct point.
+        lapTimes_.push_back(currentLapTime_ - (1.0f - t) * dt);
+        currentLapTime_ = (1.0f - t) * dt; // Start the next lap time from the correct point
     }
 }
 

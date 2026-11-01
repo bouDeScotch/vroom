@@ -25,15 +25,15 @@ void InputMapper::poll() {
     usingPad_ = false;
 
     // Clavier (fleches et ZQSD) Note : raylib par du principe que les touches sont en QWERTY, donc ZQSD pour AZERTY devient WASD pour QWERTY
-    raw_.throttle = IsKeyDown(KEY_W) ? 1.0f : 0.0f;
-    raw_.brake = (IsKeyDown(KEY_S)) ? 1.0f : 0.0f;
-    raw_.steering =   (float)(IsKeyDown(KEY_F)) 
-                    - (float)(IsKeyDown(KEY_A));
-    raw_.clutch = IsKeyDown(KEY_LEFT_CONTROL) ? 1.0f : 0.0f;
-    raw_.handbrake = IsKeyDown(KEY_SPACE);
-    raw_.starter = IsKeyDown(KEY_R);
-    if (IsKeyPressed(KEY_UP)) pendingShiftUp_ = true;
-    if (IsKeyPressed(KEY_DOWN)) pendingShiftDown_ = true;
+    raw_.throttle = IsKeyDown(InputMapKeyboard::throttleKey) ? 1.0f : 0.0f;
+    raw_.brake = (IsKeyDown(InputMapKeyboard::brakeKey)) ? 1.0f : 0.0f;
+    raw_.steering =   (float)(IsKeyDown(InputMapKeyboard::steeringRightKey)) 
+                    - (float)(IsKeyDown(InputMapKeyboard::steeringLeftKey));
+    raw_.clutch = IsKeyDown(InputMapKeyboard::clutchKey) ? 1.0f : 0.0f;
+    raw_.handbrake = IsKeyDown(InputMapKeyboard::handbrakeKey);
+    raw_.starter = IsKeyDown(InputMapKeyboard::starterKey);
+    if (IsKeyPressed(InputMapKeyboard::shiftUpKey)) pendingShiftUp_ = true;
+    if (IsKeyPressed(InputMapKeyboard::shiftDownKey)) pendingShiftDown_ = true;
 
     if (IsGamepadAvailable(padIndex_)) {
         float sx = deadzone(GetGamepadAxisMovement(padIndex_, GAMEPAD_AXIS_LEFT_X));

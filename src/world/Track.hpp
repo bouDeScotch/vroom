@@ -39,7 +39,7 @@ public:
     Vector2 startPosition() const { return startPos_; }  // metres
     float startAngleRad() const;                         // radians
     Vector2 sizeMeters() const;
-    bool crossedFinishLine(Vector2 prevPos, Vector2 newPos) const;
+    float crossedFinishLine(Vector2 prevPos, Vector2 newPos) const;
 
     // A appeler entre BeginMode2D et EndMode2D.
     void draw(float pixelsPerMeter) const;

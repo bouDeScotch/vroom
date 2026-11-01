@@ -19,7 +19,7 @@ public:
 
 private:
     std::string trackPath_;
-    bool lineCrossed_ = false;  // pour detecter le passage de la ligne de depart
+    float lineCrossed_ = -1.0f;  // pour detecter le passage de la ligne de depart
     bool resetRequested_ = false;
     Track track_;            // declare apres trackPath_ : construit a partir de lui
     Car car_;

@@ -1,4 +1,17 @@
 #pragma once
+#include <raylib.h>
+
+enum InputMapKeyboard {
+    throttleKey = KEY_W,
+    brakeKey = KEY_S,
+    steeringLeftKey = KEY_A,
+    steeringRightKey = KEY_F,
+    clutchKey = KEY_LEFT_CONTROL,
+    handbrakeKey = KEY_SPACE,
+    starterKey = KEY_R,
+    shiftUpKey = KEY_UP,
+    shiftDownKey = KEY_DOWN
+};
 
 struct CarInput {
     float throttle = 0.0f; // 0.0f à 1.0f

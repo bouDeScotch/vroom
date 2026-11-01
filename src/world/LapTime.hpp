@@ -21,7 +21,7 @@ public:
         return lapTimes_.back();
     }
     float getBestLapTime() const;
-    void update(float dt, bool lapCompleted, bool started);
+    void update(float dt, float t, bool started);
     void draw(int x, int y) const; // Draw the lap timer at the specified position
 private:
     std::vector<float> lapTimes_;
